@@ -37,19 +37,34 @@ struct ht_dlist_entry *ht_dlist_pop_first(struct ht_dlist *list_p);
 struct ht_dlist_entry *ht_dlist_pop_last(struct ht_dlist *list_p);
 
 
+// entry of string instance
+struct ht_str {
+  int refcnt; // negative number means s shall not be free'd
+  char *s; // string instance
+  size_t len;
+};
+
+struct ht_str *ht_str_new_copystr(char *copystr, size_t slen);
+struct ht_str *ht_str_new_statstr(char *static_str, size_t slen);
+int ht_str_ref(struct ht_str *hstr_p);
+int ht_str_unref(struct ht_str *hstr_p);
+void ht_str_destroy(struct ht_str *hstr_p);
+
 // naive implementation using double linked list as tables
+// should it be some variable length array? (for indexed access)
 struct ht_strtable {
   struct ht_dlist *keys_table_p;
   struct ht_dlist *values_table_p;
 };
 
-// entry of string instance
-struct ht_str {
-  int refcnt;
-  char *s; // string instance
-};
+int ht_strtable_add_new_copystr(struct ht_strtable *stable, char *copystr, size_t slen);
+int ht_strtable_add_new_statstr(struct ht_strtable *stable, char *static_str, size_t slen);
+int ht_strtable_lookup_str_index(struct ht_strtable *stable, char *s, size_t slen);
+struct ht_str* ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen); // SHALL be unref'ed
+struct ht_str* ht_strtable_lookup_index_ref(struct ht_strtable *stable, int index); // SHALL be unref'ed
+void ht_strtable_destroy(struct ht_strtable *stable);
 
-
+// key-value tuple
 struct ht_strtuple {
   struct ht_strtable *table_p;
   struct ht_str *key_p;

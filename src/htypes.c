@@ -87,6 +87,49 @@ struct ht_dlist_entry *ht_dlist_pop_last(struct ht_dlist *list_p){
 }
 
 
+struct ht_str *ht_str_new_copystr(char *copystr, size_t slen){
+  struct ht_str *hstr_p = NULL;
+  if (! (hstr_p = malloc(sizeof(struct ht_str)))) return NULL;
+  if (! (hstr_p->s = malloc(slen+1))){
+    free(hstr_p);
+    return NULL;
+  }
+  memset(hstr_p->s, 0, slen+1);
+  strncpy(hstr_p->s, copystr, slen+1);
+  hstr_p->len = slen;
+  hstr_p->refcnt = 1;
+  return hstr_p;
+}
+struct ht_str *ht_str_new_statstr(char *static_str, size_t slen){
+  struct ht_str *hstr_p = NULL;
+  if (! (hstr_p = malloc(sizeof(struct ht_str)))) return NULL;
+  hstr_p->s = static_str;
+  hstr_p->len = slen;
+  hstr_p->refcnt = -1;
+  return hstr_p;
+}
+int ht_str_ref(struct ht_str *hstr_p){
+  assert(hstr_p->refcnt != 0);
+  if (hstr_p->refcnt > 0){
+    hstr_p->refcnt++;
+  } else {
+    hstr_p->refcnt--;
+  }
+  return abs(hstr_p->refcnt);
+}
+int ht_str_unref(struct ht_str *hstr_p){
+  assert(hstr_p->refcnt != 0);
+  if (hstr_p->refcnt > 0){
+    hstr_p->refcnt --;
+    if (hstr_p->refcnt == 0){
+      free(hstr_p->s);
+      hstr_p->s = NULL;
+    }
+  } else {
+    hstr_p->refcnt ++;
+  }
+  return abs(hstr_p->refcnt);
+}
 
 #ifdef HTYPES_TEST
 int main(int argc, char **argv){
