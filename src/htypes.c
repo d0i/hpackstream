@@ -108,6 +108,14 @@ struct ht_str *ht_str_new_statstr(char *static_str, size_t slen){
   hstr_p->refcnt = -1;
   return hstr_p;
 }
+void ht_str_destroy(struct ht_str *hstr_p){
+  if (hstr_p->refcnt > 0){
+    free(hstr_p->s);
+    hstr_p->s = NULL;
+  }
+  free(hstr_p);
+  return;
+}
 int ht_str_ref(struct ht_str *hstr_p){
   assert(hstr_p->refcnt != 0);
   if (hstr_p->refcnt > 0){
@@ -118,21 +126,28 @@ int ht_str_ref(struct ht_str *hstr_p){
   return abs(hstr_p->refcnt);
 }
 int ht_str_unref(struct ht_str *hstr_p){
+  int free_string = 0;
   assert(hstr_p->refcnt != 0);
   if (hstr_p->refcnt > 0){
     hstr_p->refcnt --;
-    if (hstr_p->refcnt == 0){
+    free_string = 1;
+  } else {
+    hstr_p->refcnt ++;
+  }
+  if (hstr_p->refcnt == 0){
+    if (free_string){
       free(hstr_p->s);
       hstr_p->s = NULL;
     }
-  } else {
-    hstr_p->refcnt ++;
+    ht_str_destroy(hstr_p);
+    return 0;
   }
   return abs(hstr_p->refcnt);
 }
 
 #ifdef HTYPES_TEST
-int main(int argc, char **argv){
+
+void test_dlist(void){
   struct ht_dlist *list_p;
   struct ht_dlist_entry *ent_p;
   
@@ -148,6 +163,40 @@ int main(int argc, char **argv){
   ht_dlist_entry_destroy(ent_p);
   assert(list_p->entry_count == 1);
   ht_dlist_destroy(list_p);
+
+  return;
+}
+void test_dstr(void){
+  struct ht_str *str1_p;
+  struct ht_str *str2_p;
+  struct ht_str *str3_p;
+  int i;
+
+  str1_p = ht_str_new_copystr("hoi", 3);
+  str2_p = ht_str_new_copystr("hoge", 4);
+  str3_p = ht_str_new_statstr("foobar", 6);
+
+  for (i = 0; i < 10; i++){
+    ht_str_ref(str1_p);
+    ht_str_ref(str2_p);
+    ht_str_ref(str3_p);
+  }
+  assert(strcmp(str1_p->s, "hoi") == 0);
+  assert(strcmp(str2_p->s, "hoge") == 0);
+  assert(strcmp(str3_p->s, "foobar") == 0);
+  
+  ht_str_destroy(str1_p);
+  for (i = 0; i < 11; i++){
+    ht_str_unref(str2_p);
+    ht_str_unref(str3_p);
+  }
+}
+
+// test it with valgrind to make sure no memory is leaked.
+int main(int argc, char **argv){
+  test_dlist();
+  test_dstr();
+  
 
   return;
 }

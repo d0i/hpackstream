@@ -53,8 +53,7 @@ void ht_str_destroy(struct ht_str *hstr_p);
 // naive implementation using double linked list as tables
 // should it be some variable length array? (for indexed access)
 struct ht_strtable {
-  struct ht_dlist *keys_table_p;
-  struct ht_dlist *values_table_p;
+  struct ht_dlist *values_list_p;
 };
 
 int ht_strtable_add_new_copystr(struct ht_strtable *stable, char *copystr, size_t slen);
