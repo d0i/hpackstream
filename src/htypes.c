@@ -145,6 +145,76 @@ int ht_str_unref(struct ht_str *hstr_p){
   return abs(hstr_p->refcnt);
 }
 
+struct ht_strtable *ht_strtable_new(){
+  struct ht_strtable *stable;
+  if ((stable = malloc(sizeof(struct ht_strtable))) == NULL){
+    return NULL;
+  }
+  if ((stable->values_list_p = ht_dlist_new()) == NULL){
+    free(stable);
+    return NULL;
+  }
+  return stable;
+}
+struct ht_str* ht_strtable_lookup_index_ref(struct ht_strtable *stable, int index){
+  int i = 0;
+  struct ht_dlist_entry *entry_p;
+  struct ht_str *str_p;
+
+  for (i = 1, entry_p = stable->values_list_p->head->next; 
+       entry_p->next != NULL && entry_p->value_type >= 0 && i <= index;
+       entry_p = entry_p->next){
+    if (i == index){
+      str_p = (struct ht_str *)entry_p->value;
+      ht_str_ref(str_p);
+      return str_p;
+    }
+  }
+  return NULL;
+}
+struct ht_str* ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen){
+  int i = 0;
+  struct ht_dlist_entry *entry_p;
+  struct ht_str *str_p;
+
+  for (i = 1, entry_p = stable->values_list_p->head->next; 
+       entry_p->next != NULL && entry_p->value_type >= 0;
+       entry_p = entry_p->next){
+    str_p = (struct ht_str *)entry_p->value;
+    if ((slen == str_p->len) && (strcmp(s, str_p->s) == 0)){
+      ht_str_ref(str_p);
+      return str_p;
+    }
+  }
+  return NULL;
+}
+struct ht_str* ht_strtable_add_new_copystr_ref(struct ht_strtable *stable, char *copystr, size_t slen){
+  struct ht_str *str_p = NULL;
+  struct ht_dlist_entry *entry_p = NULL;
+  if ((str_p = ht_strtable_lookup_str_ref(stable, copystr, slen)) == NULL){
+    // make a new entry and prepend
+    if ((str_p = ht_str_new_copystr(copystr, slen)) == NULL){
+      return NULL;
+    }
+    if ((entry_p = ht_dlist_entry_new(0, (void*)str_p, (ht_dlist_value_free_func)ht_str_unref)) == NULL){
+      ht_str_destroy(str_p);
+      return NULL;
+    }
+    ht_dlist_prepend_new_entry(stable->values_list_p, entry_p);
+    ht_str_ref(str_p);
+  }
+  return str_p;
+}
+
+void ht_strtable_destroy(struct ht_strtable *stable){
+  ht_dlist_destroy(stable->values_list_p);
+  free(stable);
+  return;
+}
+
+
+
+
 #ifdef HTYPES_TEST
 
 void test_dlist(void){

@@ -56,11 +56,12 @@ struct ht_strtable {
   struct ht_dlist *values_list_p;
 };
 
-int ht_strtable_add_new_copystr(struct ht_strtable *stable, char *copystr, size_t slen);
-int ht_strtable_add_new_statstr(struct ht_strtable *stable, char *static_str, size_t slen);
-int ht_strtable_lookup_str_index(struct ht_strtable *stable, char *s, size_t slen);
-struct ht_str* ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen); // SHALL be unref'ed
+// index is 1-origin (corresponds to HPACK spec)
 struct ht_str* ht_strtable_lookup_index_ref(struct ht_strtable *stable, int index); // SHALL be unref'ed
+struct ht_str* ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen); // SHALL be unref'ed
+struct ht_str* ht_strtable_add_new_copystr_ref(struct ht_strtable *stable, char *copystr, size_t slen); // SHALL be unref'ed
+//deferred struct ht_str* ht_strtable_add_new_statstr_ref(struct ht_strtable *stable, char *static_str, size_t slen); // SHALL be unref'ed
+struct ht_strtable *ht_strtable_new();
 void ht_strtable_destroy(struct ht_strtable *stable);
 
 // key-value tuple
