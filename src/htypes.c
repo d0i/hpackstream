@@ -261,11 +261,40 @@ void test_dstr(void){
     ht_str_unref(str3_p);
   }
 }
+void test_strtable(void){
+  struct ht_strtable *stable = NULL;
+  struct ht_str *hstr;
+  int i;
+
+  stable = ht_strtable_new();
+  assert(stable != NULL);
+
+  for (i = 0; i < 1000; i++){
+    hstr = ht_strtable_add_new_copystr_ref(stable, "hoge1", 5);
+    assert(hstr != NULL);
+    ht_str_unref(hstr);
+  }
+  hstr = ht_strtable_add_new_copystr_ref(stable, "hoge2", 5);
+  assert(hstr != NULL);
+  ht_str_unref(hstr);
+
+  hstr = ht_strtable_lookup_index_ref(stable, 1);
+  assert(strcmp(hstr->s, "hoge2") == 0);
+  ht_str_unref(hstr);
+  hstr = ht_strtable_lookup_str_ref(stable, "hoge1", 5);
+  assert(strcmp(hstr->s, "hoge1") == 0);
+  ht_str_unref(hstr);
+
+  ht_strtable_destroy(stable);
+  return;
+}
+
 
 // test it with valgrind to make sure no memory is leaked.
 int main(int argc, char **argv){
   test_dlist();
   test_dstr();
+  test_strtable();
   
 
   return;
