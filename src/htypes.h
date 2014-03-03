@@ -51,7 +51,7 @@ int ht_str_unref(struct ht_str *hstr_p);
 void ht_str_destroy(struct ht_str *hstr_p);
 
 // naive implementation using double linked list as tables
-// should it be some variable length array? (for indexed access)
+// should it be some btree for better search? FIXME
 struct ht_strtable {
   struct ht_dlist *values_list_p;
 };
