@@ -57,21 +57,23 @@ struct ht_strtable {
 };
 
 // index is 1-origin (corresponds to HPACK spec)
-struct ht_str* ht_strtable_lookup_index_ref(struct ht_strtable *stable, int index); // SHALL be unref'ed
-struct ht_str* ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen); // SHALL be unref'ed
-struct ht_str* ht_strtable_add_new_copystr_ref(struct ht_strtable *stable, char *copystr, size_t slen); // SHALL be unref'ed
+struct ht_str *ht_strtable_lookup_index_ref(struct ht_strtable *stable, int index); // SHALL be unref'ed
+struct ht_str *ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen); // SHALL be unref'ed
+struct ht_str *ht_strtable_add_new_copystr_ref(struct ht_strtable *stable, char *copystr, size_t slen); // SHALL be unref'ed
 //deferred struct ht_str* ht_strtable_add_new_statstr_ref(struct ht_strtable *stable, char *static_str, size_t slen); // SHALL be unref'ed
 struct ht_strtable *ht_strtable_new();
 void ht_strtable_destroy(struct ht_strtable *stable);
 
 // key-value tuple
 struct ht_strtuple {
-  struct ht_strtable *table_p;
-  struct ht_str *key_p;
-  struct ht_str *value_p;
+  struct ht_strtable *stable;
+  struct ht_str *key;
+  struct ht_str *value;
 };
 
-
+struct ht_strtuple *ht_strtuple_new(struct ht_strtable *stable, struct ht_str *key, struct ht_str *value);
+struct ht_strtuple *ht_strtuple_new_string(struct ht_strtable *stable, char *key, int key_len, char *value, int value_len);
+void ht_strtuple_destroy(struct ht_strtuple *tuple);
 
 
 #endif

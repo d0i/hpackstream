@@ -156,7 +156,7 @@ struct ht_strtable *ht_strtable_new(){
   }
   return stable;
 }
-struct ht_str* ht_strtable_lookup_index_ref(struct ht_strtable *stable, int index){
+struct ht_str *ht_strtable_lookup_index_ref(struct ht_strtable *stable, int index){
   int i = 0;
   struct ht_dlist_entry *entry_p;
   struct ht_str *str_p;
@@ -172,7 +172,7 @@ struct ht_str* ht_strtable_lookup_index_ref(struct ht_strtable *stable, int inde
   }
   return NULL;
 }
-struct ht_str* ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen){
+struct ht_str *ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, size_t slen){
   int i = 0;
   struct ht_dlist_entry *entry_p;
   struct ht_str *str_p;
@@ -188,7 +188,7 @@ struct ht_str* ht_strtable_lookup_str_ref(struct ht_strtable *stable, char *s, s
   }
   return NULL;
 }
-struct ht_str* ht_strtable_add_new_copystr_ref(struct ht_strtable *stable, char *copystr, size_t slen){
+struct ht_str *ht_strtable_add_new_copystr_ref(struct ht_strtable *stable, char *copystr, size_t slen){
   struct ht_str *str_p = NULL;
   struct ht_dlist_entry *entry_p = NULL;
   if ((str_p = ht_strtable_lookup_str_ref(stable, copystr, slen)) == NULL){
@@ -213,6 +213,42 @@ void ht_strtable_destroy(struct ht_strtable *stable){
 }
 
 
+// it does not increase refcnt
+struct ht_strtuple *ht_strtuple_new(struct ht_strtable *stable, struct ht_str *key, struct ht_str *value){
+  struct ht_strtuple *tuple=NULL;
+  if ((tuple = malloc(sizeof(struct ht_strtuple))) == NULL){
+    return NULL;
+  }
+  tuple->stable = stable;
+  tuple->key = key;
+  tuple->value = value;
+  return tuple;
+}
+struct ht_strtuple *ht_strtuple_new_string(struct ht_strtable *stable, char *key, int key_len, char *value, int value_len){
+  struct ht_str *key_hstr = NULL;
+  struct ht_str *value_hstr = NULL;
+  struct ht_strtuple *tuple = NULL;
+  key_hstr = ht_strtable_add_new_copystr_ref(stable, key, key_len);
+  value_hstr = ht_strtable_add_new_copystr_ref(stable, value, value_len);
+  if (key_hstr == NULL || value_hstr == NULL){
+    goto fail;
+  }
+  if ((tuple = ht_strtuple_new(stable, key_hstr, value_hstr)) == NULL){
+    goto fail;
+  }
+  return tuple;
+ fail:
+  if (key_hstr) ht_str_unref(key_hstr);
+  if (value_hstr) ht_str_unref(value_hstr);
+  return NULL;
+}
+void ht_strtuple_destroy(struct ht_strtuple *tuple){
+  ht_str_unref(tuple->key);
+  ht_str_unref(tuple->value);
+  memset(tuple, 0, sizeof(struct ht_strtuple));
+  free(tuple);
+  return;
+}
 
 
 #ifdef HTYPES_TEST
@@ -289,13 +325,52 @@ void test_strtable(void){
   return;
 }
 
+void test_strtuple(void){
+  struct ht_strtable *stable = NULL;
+  struct ht_str *hstr_k;
+  struct ht_str *hstr_v;
+  struct ht_strtuple *tuple;
+  int i;
+  char *cp_k = NULL;
+  char *cp_v = NULL;
+
+  stable = ht_strtable_new();
+  assert(stable != NULL);
+  tuple = ht_strtuple_new_string(stable, "hoge", 4, "hoi", 3);
+  assert(tuple != NULL);
+  cp_k = tuple->key->s;
+  cp_v = tuple->value->s;
+  assert(tuple->key->refcnt == 2); // shuold be 1?
+  ht_strtuple_destroy(tuple);
+  
+  tuple = ht_strtuple_new_string(stable, "hoge", 4, "hoi", 3);
+  assert(tuple != NULL);
+  assert(tuple->key->s == cp_k);
+  assert(tuple->value->s == cp_v);
+  ht_strtuple_destroy(tuple);
+
+  hstr_k = ht_strtable_add_new_copystr_ref(stable, "hoge", 4);
+  hstr_v = ht_strtable_add_new_copystr_ref(stable, "foo", 3);
+  assert(hstr_k != NULL);
+  assert(hstr_v != NULL);
+  tuple = ht_strtuple_new(stable, hstr_k, hstr_v);
+  assert(tuple->key->s == cp_k);
+  assert(tuple->value->s != cp_v);
+  assert(strcmp(tuple->value->s, "foo") == 0);
+  ht_strtuple_destroy(tuple);
+
+  ht_strtable_destroy(stable);
+
+  return;
+}
+
 
 // test it with valgrind to make sure no memory is leaked.
 int main(int argc, char **argv){
   test_dlist();
   test_dstr();
   test_strtable();
-  
+  test_strtuple();
 
   return;
 }
