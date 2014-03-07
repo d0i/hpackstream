@@ -242,6 +242,18 @@ struct ht_strtuple *ht_strtuple_new_string(struct ht_strtable *stable, char *key
   if (value_hstr) ht_str_unref(value_hstr);
   return NULL;
 }
+// ref and malloc
+struct ht_strtuple *ht_strtuple_copy(struct ht_strtuple *tuple){
+  struct ht_strtuple *newtuple;
+  if ((newtuple = malloc(sizeof(struct ht_strtuple))) == NULL){
+    return NULL;
+  }
+  ht_str_ref(tuple->key);
+  ht_str_ref(tuple->value);
+  memcpy(newtuple, tuple, sizeof(struct ht_strtuple));
+  return newtuple;
+}
+// unref and free
 void ht_strtuple_destroy(struct ht_strtuple *tuple){
   ht_str_unref(tuple->key);
   ht_str_unref(tuple->value);

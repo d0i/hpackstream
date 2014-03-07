@@ -49,6 +49,8 @@ struct ht_str *ht_str_new_statstr(char *static_str, size_t slen);
 int ht_str_ref(struct ht_str *hstr_p);
 int ht_str_unref(struct ht_str *hstr_p);
 void ht_str_destroy(struct ht_str *hstr_p);
+#define ht_str_len(hstr_p) ((hstr_p)->len)
+#define ht_str_cmp(h1, h2) (strcmp((h1)->s, (h2)->s))
 
 // naive implementation using double linked list as tables
 // should it be some btree for better search? FIXME
@@ -73,7 +75,11 @@ struct ht_strtuple {
 
 struct ht_strtuple *ht_strtuple_new(struct ht_strtable *stable, struct ht_str *key, struct ht_str *value);
 struct ht_strtuple *ht_strtuple_new_string(struct ht_strtable *stable, char *key, int key_len, char *value, int value_len);
-void ht_strtuple_destroy(struct ht_strtuple *tuple);
+// ref and malloc
+struct ht_strtuple *ht_strtuple_copy(struct ht_strtuple *tuple);
+// unref and free
+void ht_strtuple_destroy(struct ht_strtuple *tuple); 
+int ht_strtuple_is_identical(struct ht_strtuple *one, struct ht_strtuple *two);
 
 
 #endif
