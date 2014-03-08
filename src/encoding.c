@@ -8,8 +8,6 @@
 
 int encmax(int b){
   switch (b){
-  case 0:
-    return 0x00;
   case 1:
     return 0x01;
   case 2:
@@ -24,7 +22,10 @@ int encmax(int b){
     return 0x3f;
   case 7:
     return 0x7f;
+  case 8:
+    return 0xff;
   default:
+    fprintf(stderr, "encmax does not accept %d.\n", b);
     assert(0); // should not happen
     return -1;
   }
@@ -67,12 +68,12 @@ int64_t dec_integer(u_int8_t *data, int data_len, int prefix_len, u_int8_t **nex
 
   value = data[count++] & max_first;
   if (value == max_first){
-    m = 1L;
+    m = 0;
     do {
       b = data[count++];
-      value += (b & 0x7f) * m;
-      m = m << 7;
-    } while (b & 128 == 128 && count < data_len && count < 9);
+      value += (b & 0x7f) << 7*m;
+      m++; 
+    } while ((b & 0x80) != 0 && count < data_len && count < 9);
     // 9 * 7 == 63 is the maximum count it can decode
     if (count == 9){
       fprintf(stderr, "dec_integer: integer overflow\n");
@@ -84,7 +85,7 @@ int64_t dec_integer(u_int8_t *data, int data_len, int prefix_len, u_int8_t **nex
 }
 
 // section 4.1.2
-int enc_string(u_int8_t *buf, int buf_len, u_int8_t *s, int s_len){
+int enc_string(u_int8_t *buf, int buf_len, char *s, int s_len){
   int i;
   u_int8_t *wp;
   buf[0] = 0;
@@ -103,10 +104,10 @@ int enc_string(u_int8_t *buf, int buf_len, u_int8_t *s, int s_len){
 // buffer will have trailing \0, but it returns string length (\0 excluded)
 // section 4.1.2
 // FIXME: should it be zero-copy?
-int dec_string(u_int8_t *data, int data_len, u_int8_t *buf, int buf_len){
+int dec_string(u_int8_t *data, int data_len, char *buf, int buf_len){
   int64_t slen;
   u_int8_t *s;
-  if (data[0] & 0x80 == 0x80){
+  if ((data[0] & 0x80) == 0x80){
     fprintf(stderr, "dec_string: huffman encoding is not supported\n");
     return -1;
   }
@@ -127,11 +128,14 @@ int main(int argc, char **argv){
 
   u_int8_t buf[128];
   int buflen = 128;
+  char str[128];
+  
   u_int8_t *rp;
   int r;
   int64_t v;
   int i;
 
+  fprintf(stderr, "error cases are not yet tested.\n");
   // section 4.1.1.1
   memset(buf, 0, sizeof(buf));
   buf[0] = 0xc0; // 11000000
@@ -142,6 +146,18 @@ int main(int argc, char **argv){
   v = dec_integer(buf, sizeof(buf), 3, &rp);
   assert(v == 10);
   assert(rp == buf + 1);
+
+  // additional test
+  memset(buf, 0, sizeof(buf));
+  buf[0] = 0xc0; 
+  r = enc_integer(buf, sizeof(buf), 10, 7);
+  assert(r == 2);
+  assert(buf[0] == 0xc1);
+  assert(buf[1] == 0x09);
+
+  v = dec_integer(buf, sizeof(buf), 7, &rp);
+  assert(v == 10);
+  assert(rp == buf+2);
 
   // section 4.1.1.2
   memset(buf, 0, sizeof(buf));
@@ -176,13 +192,35 @@ int main(int argc, char **argv){
 
     buf[0] = 0;
     r = enc_integer(buf, sizeof(buf), i, 7);
-    v = dec_integer(buf, sizeof(buf), 0, &rp);
+    v = dec_integer(buf, sizeof(buf), 7, &rp);
     assert(i == v);
     assert(rp == buf + r);
   }
 
-  fprintf(stderr, "test for string is not yet.\n");
-  assert(0);
+  // check decoding and encoding of string
+  buf[0] = 3;
+  buf[1] = 'a';
+  buf[2] = 'b';
+  buf[3] = 'c';
+
+  r = dec_string(buf, sizeof(buf), str, sizeof(str));
+  assert(r == 3);
+  assert(strlen(str) == 3);
+  assert(strcmp("abc", str) == 0);
+
+  memset(buf, 0xff, sizeof(buf));
+  r = enc_string(buf, sizeof(buf), str, strlen(str));
+  assert(r == 4);
+  assert(buf[0] == 3);
+  assert(buf[1] == 'a');
+  assert(buf[2] == 'b');
+  assert(buf[3] == 'c');
+  assert(buf[4] == 0xff);
+
+  fprintf(stderr, "test ok.\n");
+
+  return 0;
+  
 }
 #endif
 
