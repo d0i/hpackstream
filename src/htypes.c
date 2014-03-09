@@ -257,6 +257,15 @@ struct ht_strtuple *ht_strtuple_copy(struct ht_strtuple *tuple){
   memcpy(newtuple, tuple, sizeof(struct ht_strtuple));
   return newtuple;
 }
+
+// just pointer reference (convenient in python ctypes)
+char* ht_strtuple_getkey(struct ht_strtuple *tuple){
+  return tuple->key->s;
+}
+char* ht_strtuple_getvalue(struct ht_strtuple *tuple){
+  return tuple->value->s;
+}
+
 // unref and free
 void ht_strtuple_destroy(struct ht_strtuple *tuple){
   ht_str_unref(tuple->key);

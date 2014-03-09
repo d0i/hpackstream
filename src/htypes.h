@@ -78,6 +78,9 @@ struct ht_strtuple *ht_strtuple_new(struct ht_strtable *stable, struct ht_str *k
 struct ht_strtuple *ht_strtuple_new_string(struct ht_strtable *stable, char *key, int key_len, char *value, int value_len);
 // ref and malloc
 struct ht_strtuple *ht_strtuple_copy(struct ht_strtuple *tuple);
+// just pointer reference (convenient in python ctypes)
+char* ht_strtuple_getkey(struct ht_strtuple *tuple);
+char* ht_strtuple_getvalue(struct ht_strtuple *tuple);
 // unref and free
 void ht_strtuple_destroy(struct ht_strtuple *tuple); 
 int ht_strtuple_is_identical(struct ht_strtuple *one, struct ht_strtuple *two);

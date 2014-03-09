@@ -115,6 +115,10 @@ void hpack_context_destroy(struct hpack_context *ctx){
   return;
 }
 
+int hpack_context_getsize(struct hpack_context *ctx){
+  return ctx->ht->current_size;
+}
+
 int hpack_is_index_static(struct hpack_context *ctx, int idx){
   return (HPACK_STATIC_TABLE_MININDEX(ctx) <= idx && idx <= HPACK_STATIC_TABLE_MAXINDEX(ctx));
 }
@@ -184,7 +188,7 @@ struct ht_strtuple *hpack_lookup_tuple(struct hpack_context *ctx, int idx){
 
 // tuple_p_ret will point new tuple (should be destroyed)
 // return consumed bytes or -1
-int hpack_context_decode_tuple(struct hpack_context *ctx, u_int8_t *data, int data_len, struct ht_strtuple **tuple_p_ret){
+int hpack_decode_tuple(struct hpack_context *ctx, u_int8_t *data, int data_len, struct ht_strtuple **tuple_p_ret){
   int flag_htupdate = 0;
   int64_t irep = -1; // indexed representation
   u_int8_t *rp = data;
