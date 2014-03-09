@@ -21,7 +21,7 @@ HptHeaderTable *hpt_header_table_new(size_t maximum_size, struct ht_strtable *st
 int hpt_header_table_add_new_field(HptHeaderTable *htable, struct ht_strtuple *hfield_ref);
 // must be destroied reterned value is ref'ed. must be destroied properly
 struct ht_strtuple *hpt_header_table_lookup_by_index_ref(HptHeaderTable *htable, int idx);
-// returns index
+// if not matched return 0. if key match return negative, if tuple match return positive idx.
 int hpt_header_table_lookup_by_header_field(HptHeaderTable *htable, struct ht_strtuple *hfield);
 void hpt_header_table_destroy(HptHeaderTable *htable);
 // return -1 on error or 0 on success

@@ -75,7 +75,7 @@ static const char *hpack_static_header_tables[] = {
 
 #define HPACK_STATIC_TABLE_LEN 60
 
-#define HPACK_HEADER_TABLE_MININDEX(ctX) 1
+#define HPACK_HEADER_TABLE_MININDEX(ctx) 1
 #define HPACK_HEADER_TABLE_MAXINDEX(ctx) ((ctx)->ht->len)
 #define HPACK_STATIC_TABLE_MININDEX(ctx) (HPACK_HEADER_TABLE_MAXINDEX(ctx)+1)
 #define HPACK_STATIC_TABLE_MAXINDEX(ctx) (HPACK_HEADER_TABLE_MAXINDEX(ctx)+HPACK_STATIC_TABLE_LEN)
@@ -291,6 +291,96 @@ int hpack_decode_tuple(struct hpack_context *ctx, u_int8_t *data, int data_len, 
   return -1;
 }
 
+
+// tentative: only determined by number (for now)
+int hpack_flag_update_strategy(struct hpack_context *ctx, struct ht_strtuple *tuple){
+  if (tuple->value->len > ctx->ht->maximum_size/16){
+    return 0;
+  }
+  return 1;
+}
+
+// return number of bytes written
+// given tuple shall be destroyed on upper frame
+int hpack_encode_tuple(struct hpack_context *ctx, u_int8_t *buf, int buf_len, struct ht_strtuple *tuple_copied){
+  int idx_tuple_match = 0;
+  int idx_key_match = 0;
+  int i;
+  char *v;
+  u_int8_t *wp = buf;
+  u_int8_t *ep = buf+buf_len;
+  int flag_update = 0;
+  struct ht_strtuple *tuple_new = NULL;
+    
+  // find the exact match
+  i = hpt_header_table_lookup_by_header_field(ctx->ht, tuple_copied);
+  if (i > 0){
+    idx_tuple_match = i;
+    goto resolved;
+  } else if (i < 0){
+    idx_key_match = -i;
+  }
+
+  for (i = HPACK_STATIC_TABLE_MININDEX(ctx); i <= HPACK_STATIC_TABLE_MAXINDEX(ctx); i++){
+    if (strcmp(tuple_copied->key->s, hpack_static_table_key_of(ctx, i)) == 0){
+      if (idx_key_match == 0){
+	idx_key_match = i;
+      }
+      v = (char *)hpack_static_table_value_of(ctx, i);
+      if (v != NULL && strcmp(tuple_copied->value->s, v) == 0){
+	idx_tuple_match = i;
+	goto resolved;
+      }
+    }
+  }
+  
+  // if there's a key-match, save and reuse the result
+ resolved:
+  if (idx_tuple_match > 0){
+    // section 4.2: Indexed Header Field Representation
+    *wp = 0x80;
+    if ((i = enc_integer(wp, ep-wp, idx_tuple_match, 1)) < 0) goto fail;
+    wp += i;
+  } else {
+    flag_update = hpack_flag_update_strategy(ctx, tuple_copied);
+    if (flag_update){
+      *wp = 0;
+    } else {
+      *wp = 0x40; // 0100 0000
+    }
+    if (idx_key_match > 0){
+      // indexed name
+      if ((i = enc_integer(wp, ep-wp, idx_key_match, 1)) < 0) goto fail;
+      wp += i;
+    } else {
+      // 0 and key name 
+      wp ++; // already0
+      if ((i = enc_string(wp, ep-wp, tuple_copied->key->s, tuple_copied->key->len)) < 0) goto fail;
+      wp += i;
+    }
+    // value
+    if ((i = enc_string(wp, ep-wp, tuple_copied->value->s, tuple_copied->value->len)) < 0) goto fail;
+    wp += i;
+  }
+
+  if (flag_update){
+    if ((tuple_new = ht_strtuple_copy(tuple_copied)) == NULL){
+      goto fail;
+    }
+    if (hpt_header_table_add_new_field(ctx->ht, tuple_new) < 0){
+      goto fail;
+    }
+  }
+
+  return wp-buf;
+
+ fail:
+  if (tuple_new) ht_strtuple_destroy(tuple_new);
+  return -1;
+}
+
+
+
 #ifdef HPACK_TEST
 
 int main(int argc, char **argv){
@@ -303,7 +393,7 @@ int main(int argc, char **argv){
   ctx = hpack_context_new(HPACK_TABLE_DEFAULT_MAX, stable);
   assert(ctx);
 
-  fprintf(stderr, "no test yet.\n");
+  fprintf(stderr, "no real test yet.\n");
 
   hpack_context_destroy(ctx);
   ht_strtable_destroy(stable);

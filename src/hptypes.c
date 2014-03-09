@@ -79,18 +79,31 @@ struct ht_strtuple *hpt_header_table_lookup_by_index_ref(HptHeaderTable *htable,
   return NULL;
 }
 
+// if not matched return 0. if key match return negative, if tuple match return positive idx.
 int hpt_header_table_lookup_by_header_field(HptHeaderTable *htable, struct ht_strtuple *hfield){
   int idx;
+  int keymatched_idx = 0;
   struct ht_dlist_entry *entry;
   struct ht_strtuple *tuple;
 
   for (idx = 0, entry = htable->headers->head; entry->next != NULL; idx++, entry = entry->next){
     tuple = (struct ht_strtuple*) entry->value;
-    if (tuple != NULL && ht_str_cmp(tuple->key, hfield->key) == 0 && ht_str_cmp(tuple->value, hfield->value) == 0){
-      return idx;
+    if (tuple != NULL){
+      if (ht_str_cmp(tuple->key, hfield->key) == 0){
+	if (keymatched_idx == 0) {
+	  keymatched_idx = idx;
+	}
+	if (ht_str_cmp(tuple->value, hfield->value) == 0){
+	  return idx;
+	}
+      }
     }
   }
-  return -1;
+  if (keymatched_idx > 0){
+    return -keymatched_idx;
+  }
+  // or not found
+  return 0;
 }
 
 // does not free stable
@@ -172,6 +185,9 @@ void test_hpt_header_table(void){
   assert(strcmp(tuple->key->s, "KEY1") == 0);
   assert(strcmp(tuple->value->s, "VAL1") == 0);
   assert(hpt_header_table_lookup_by_header_field(htable, tuple) == 3);
+  ht_str_unref(tuple->value);
+  tuple->value = ht_str_new_statstr_strlen("VAL0");
+  assert(hpt_header_table_lookup_by_header_field(htable, tuple) == -2);
   ht_strtuple_destroy(tuple);
   tuple = NULL;
 
