@@ -40,6 +40,7 @@ int hpt_header_table_add_new_field(HptHeaderTable *htable, struct ht_strtuple *h
   ht_dlist_prepend_new_entry(htable->headers, entry);
   
   htable->current_size += HPACK_ENTRY_OVERHEAD+(hfield_ref->key->len)+(hfield_ref->value->len);
+  htable->len++;
   
   // drop tail to keep the size
   while (htable->current_size > htable->maximum_size){
@@ -49,6 +50,7 @@ int hpt_header_table_add_new_field(HptHeaderTable *htable, struct ht_strtuple *h
     }
     assert(entry->value_type == HTL_ENTRY_TYPE_HDR);
     htable->current_size -= HPACK_ENTRY_OVERHEAD;
+    htable->len--;
     tuple = (struct ht_strtuple*)entry->value;
     str = (struct ht_str *)(tuple->key);
     htable->current_size -= str->len;

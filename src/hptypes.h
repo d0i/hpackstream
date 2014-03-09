@@ -1,5 +1,6 @@
-#ifndef INCLUDE_HPTYPES
-#define INCLUDE HPTYPES
+#ifndef HPTYPES_H
+#define HPTYPES_H
+
 #include "htypes.h"
 
 // arbitrary number
@@ -9,6 +10,7 @@
 typedef struct hpt_header_table {
   size_t current_size; // 3.3.1 Maximum Table Size
   size_t maximum_size;
+  size_t len; // number of entries
   struct ht_dlist *headers; // active headers
   struct ht_strtable *stable; // just reference
 } HptHeaderTable;
@@ -24,4 +26,3 @@ int hpt_header_table_lookup_by_header_field(HptHeaderTable *htable, struct ht_st
 void hpt_header_table_destroy(HptHeaderTable *htable);
 
 #endif
-

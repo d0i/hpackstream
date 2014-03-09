@@ -101,10 +101,10 @@ int enc_string(u_int8_t *buf, int buf_len, char *s, int s_len){
   return i+s_len;
 }
 
-// buffer will have trailing \0, but it returns string length (\0 excluded)
-// section 4.1.2
-// FIXME: should it be zero-copy?
-int dec_string(u_int8_t *data, int data_len, char *buf, int buf_len){
+// returns strlen (does not include trailing \0)
+// *str_p will point head of string (thus, no huffman)
+// *next_p will point head of the next chunk of data
+int dec_string_nocopy(u_int8_t *data, int data_len, char **str_p, u_int8_t **next_p){
   int64_t slen;
   u_int8_t *s;
   if ((data[0] & 0x80) == 0x80){
@@ -112,15 +112,29 @@ int dec_string(u_int8_t *data, int data_len, char *buf, int buf_len){
     return -1;
   }
 
-  slen = dec_integer(data, data_len, 1, &s);
-  if (slen+1 > buf_len){
-    fprintf(stderr, "dec_string: insufficient buffer\n");
-    return -1;
-  }
-  memcpy(buf, s, slen);
-  buf[slen] = '\0';
+  slen = dec_integer(data, data_len, 1, (u_int8_t**)str_p);
+  *next_p = ((u_int8_t*)*str_p) + slen;
+
   return slen;
 }
+
+// buffer will have trailing \0, but it returns string length (\0 excluded)
+// section 4.1.2
+int dec_string(u_int8_t *data, int data_len, char *buf, int buf_len, u_int8_t **next_p){
+  int64_t slen;
+  char *str;
+  slen = dec_string_nocopy(data, data_len, &str, next_p);
+  if (slen > 0){
+    if (slen+1 > buf_len){
+      fprintf(stderr, "dec_string: insufficient buffer\n");
+      return -1;
+    }
+    memcpy(buf, str, slen);
+    buf[slen] = '\0';
+  }
+  return slen;
+}
+
 
 #ifdef ENCODING_TEST
 
@@ -203,10 +217,11 @@ int main(int argc, char **argv){
   buf[2] = 'b';
   buf[3] = 'c';
 
-  r = dec_string(buf, sizeof(buf), str, sizeof(str));
+  r = dec_string(buf, sizeof(buf), str, sizeof(str), &rp);
   assert(r == 3);
   assert(strlen(str) == 3);
   assert(strcmp("abc", str) == 0);
+  assert(rp == buf+strlen(str)+1);
 
   memset(buf, 0xff, sizeof(buf));
   r = enc_string(buf, sizeof(buf), str, strlen(str));

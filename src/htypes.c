@@ -94,19 +94,23 @@ struct ht_str *ht_str_new_copystr(char *copystr, size_t slen){
     free(hstr_p);
     return NULL;
   }
-  memset(hstr_p->s, 0, slen+1);
-  strncpy(hstr_p->s, copystr, slen+1);
+  memcpy(hstr_p->s, copystr, slen);
+  hstr_p->s[slen] = '\0';
   hstr_p->len = slen;
   hstr_p->refcnt = 1;
   return hstr_p;
 }
-struct ht_str *ht_str_new_statstr(char *static_str, size_t slen){
+struct ht_str *ht_str_new_statstr(const char *static_str, size_t slen){
   struct ht_str *hstr_p = NULL;
   if (! (hstr_p = malloc(sizeof(struct ht_str)))) return NULL;
-  hstr_p->s = static_str;
+  hstr_p->s = (char*)static_str;
   hstr_p->len = slen;
   hstr_p->refcnt = -1;
   return hstr_p;
+}
+struct ht_str *ht_str_new_statstr_strlen(const char *static_str){
+  int l = strlen(static_str);
+  return ht_str_new_statstr(static_str, l);
 }
 void ht_str_destroy(struct ht_str *hstr_p){
   if (hstr_p->refcnt > 0){

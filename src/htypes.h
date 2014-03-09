@@ -45,7 +45,8 @@ struct ht_str {
 };
 
 struct ht_str *ht_str_new_copystr(char *copystr, size_t slen);
-struct ht_str *ht_str_new_statstr(char *static_str, size_t slen);
+struct ht_str *ht_str_new_statstr(const char *static_str, size_t slen);
+struct ht_str *ht_str_new_statstr_strlen(const char *static_char);
 int ht_str_ref(struct ht_str *hstr_p);
 int ht_str_unref(struct ht_str *hstr_p);
 void ht_str_destroy(struct ht_str *hstr_p);
