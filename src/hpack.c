@@ -195,6 +195,7 @@ int hpack_decode_tuple(struct hpack_context *ctx, u_int8_t *data, int data_len, 
   u_int8_t *end_p = data+data_len;
   int r;
   char *cp;
+  u_int8_t b;
   struct ht_str *value = NULL;
   struct ht_str *key = NULL;
   struct ht_strtuple *tuple = NULL;
@@ -213,13 +214,22 @@ int hpack_decode_tuple(struct hpack_context *ctx, u_int8_t *data, int data_len, 
 
     // section 3.2
     if (irep == 0){
-      // the reference set is emptied
-      // or the maximum size of the header table is updated
-      FIXME; // not implemented
+      // section 4.4
+      b = *(rp++);
+      if (b == 0x80){
+	// ignore (we do not have reference set)
+      } else if ((b & 0x80) == 0){
+	// length change
+	int64_t tbl_len = dec_integer(rp, end_p-rp, 1, &rp);
+	if (tbl_len < 0) goto fail;
+	if (hpt_header_table_size_update(ctx->ht, (size_t)tbl_len) < 0) goto fail;
+      }
+#if 0
     } else if (0){
       // if irep corresponding to an entry present in the reference set
       // the entry is removed from the reference set
       FIXME; // what's this? is this safe to ignore?
+#endif
     } else {
       // tuple referenced by index
       if ((tuple = hpack_lookup_tuple(ctx, irep)) == NULL){

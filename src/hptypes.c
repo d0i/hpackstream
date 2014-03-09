@@ -121,6 +121,14 @@ void hpt_header_table_dump(HptHeaderTable *htable, FILE *outf){
   return;
 }
 
+
+// return -1 on error or 0 on success
+int hpt_header_table_size_update(HptHeaderTable *htable, size_t newlen){
+  fprintf(stderr, "## table update %d -> %d\n", htable->current_size, newlen);
+  assert(0);// not implemented
+  return -1;
+}
+
 #ifdef HPTYPES_TEST
 
 void test_hpt_header_table(void){

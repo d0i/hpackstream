@@ -260,10 +260,16 @@ struct ht_strtuple *ht_strtuple_copy(struct ht_strtuple *tuple){
 
 // just pointer reference (convenient in python ctypes)
 char* ht_strtuple_getkey(struct ht_strtuple *tuple){
-  return tuple->key->s;
+  if (tuple && tuple->key){
+    return tuple->key->s;
+  }
+  return NULL;
 }
 char* ht_strtuple_getvalue(struct ht_strtuple *tuple){
-  return tuple->value->s;
+  if (tuple && tuple->value){
+    return tuple->value->s;
+  }
+  return NULL;
 }
 
 // unref and free

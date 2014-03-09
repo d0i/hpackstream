@@ -18,19 +18,22 @@ def run_case(test_case):
         (data0, data0_len) = mkData(case['wire'])
         read_len = 0
         
-        headers = [] # list of strtuple pointer
+        dec_headers = [] # list of strtuple pointer
         while read_len < data0_len:
             (data, data_len) = mkData(case['wire'], read_len)
             (strtuple, rlen) = parse_once(ctx, data, data_len)
             read_len += rlen
-            headers.append(strtuple)
-        
-        print 'no check yet.'
-        for header in headers:
-            k = c_char_p(hps.ht_strtuple_getkey(header))
-            v = c_char_p(hps.ht_strtuple_getvalue(header))
-            print 'k:', k.value
-            print 'v:', v.value
+            if strtuple:
+                dec_headers.append(strtuple)
+
+        case_headers = case['headers']
+        assert(len(case_headers) == len(dec_headers))
+        for i in range(len(case_headers)):
+            k = c_char_p(hps.ht_strtuple_getkey(dec_headers[i]))
+            v = c_char_p(hps.ht_strtuple_getvalue(dec_headers[i]))
+            assert(len(case_headers[i].keys()) == 1)
+            assert(k.value == case_headers[i].keys()[0])
+            assert(v.value == case_headers[i][k.value])
 
     hps.hpack_context_destroy(ctx)
     hps.ht_strtable_destroy(stable)
@@ -45,3 +48,5 @@ if __name__ == '__main__':
     f.close()
 
     run_case(test_case)
+    print 'ok.'
+

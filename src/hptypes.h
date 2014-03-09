@@ -24,5 +24,7 @@ struct ht_strtuple *hpt_header_table_lookup_by_index_ref(HptHeaderTable *htable,
 // returns index
 int hpt_header_table_lookup_by_header_field(HptHeaderTable *htable, struct ht_strtuple *hfield);
 void hpt_header_table_destroy(HptHeaderTable *htable);
+// return -1 on error or 0 on success
+int hpt_header_table_size_update(HptHeaderTable *htable, size_t newlen);
 
 #endif

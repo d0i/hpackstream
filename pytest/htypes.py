@@ -21,13 +21,12 @@ def parse_once(ctx, data, data_len):
 
     return (tuple_p, r)
 
-def mkData(data_src):
+def mkData(data_src, offset=0):
     "data_src is hex-str -> (data, data_len)"
-    data_len=len(data_src)/2
+    data_len=(len(data_src)/2)-offset
     data=create_string_buffer(data_len)
-    for i in range(data_len):
-        data[i] = chr(int(data_src[i*2:i*2+2], 16));
-    print "data=[%r]\n"%(data.raw)
+    for i in range(offset, len(data_src)/2):
+        data[i-offset] = chr(int(data_src[i*2:i*2+2], 16));
     return (data, data_len)
 
 
