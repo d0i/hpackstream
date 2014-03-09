@@ -31,9 +31,17 @@ def run_case(test_case):
         for i in range(len(case_headers)):
             k = c_char_p(hps.ht_strtuple_getkey(dec_headers[i]))
             v = c_char_p(hps.ht_strtuple_getvalue(dec_headers[i]))
-            assert(len(case_headers[i].keys()) == 1)
-            assert(k.value == case_headers[i].keys()[0])
-            assert(v.value == case_headers[i][k.value])
+            try:
+                assert(len(case_headers[i].keys()) == 1)
+                assert(k.value == case_headers[i].keys()[0])
+                assert(v.value == case_headers[i][k.value])
+            except AssertionError:
+                print 'k"dec","case": "%s","%s"'%(k.value, case_headers[i].keys()[0])
+                if k.value not in case_headers[i]:
+                    print 'case keys: %r'%(case_headers[i])
+                else:
+                    print 'v"dec","case": "%s","%s"'%(v.value, case_headers[i][k.value])
+                raise
 
     hps.hpack_context_destroy(ctx)
     hps.ht_strtable_destroy(stable)
